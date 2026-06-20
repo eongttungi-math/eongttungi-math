@@ -618,20 +618,22 @@ function setupCanvas(canvas){
   }
 
   canvas.addEventListener('pointerdown', (e)=>{
+    e.preventDefault();
     drawing = true;
     const p = getPos(e);
     lastX = p.x; lastY = p.y;
     canvas.setPointerCapture(e.pointerId);
-  });
+  }, { passive: false });
   canvas.addEventListener('pointermove', (e)=>{
     if(!drawing) return;
+    e.preventDefault();
     const p = getPos(e);
     ctx.beginPath();
     ctx.moveTo(lastX, lastY);
     ctx.lineTo(p.x, p.y);
     ctx.stroke();
     lastX = p.x; lastY = p.y;
-  });
+  }, { passive: false });
   const stopDraw = ()=>{ drawing = false; };
   canvas.addEventListener('pointerup', stopDraw);
   canvas.addEventListener('pointerleave', stopDraw);
