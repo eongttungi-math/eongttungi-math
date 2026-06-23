@@ -30,10 +30,14 @@
   --ring:#E9D9C2;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
+html{
+  overscroll-behavior:none;
+}
 body{
   background:var(--bg); color:var(--ink);
   font-family:'Pretendard',sans-serif;
   min-height:100vh; position:relative;
+  overscroll-behavior:none;
 }
 body::before{
   content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
@@ -169,19 +173,11 @@ body::before{
 .hint-tier.mid{ background:var(--sun); color:var(--ink); }
 .hint-box-text{ color:#fff; font-size:14.5px; }
 
-.scratch-wrap{ margin:14px 0 0 66px; width:calc(100% - 66px); position:relative; }
-.scratch-canvas{
-  display:block; width:100%; height:160px;
-  background:repeating-linear-gradient(var(--paper),var(--paper) 27px, var(--border) 27px, var(--border) 28px);
-  border:2px dashed var(--ring); border-radius:12px;
-  touch-action:none; cursor:crosshair;
+.think-nudge{
+  margin:12px 0 0 66px;
+  font-size:13.5px; color:var(--ink); opacity:0.55;
+  font-style:italic; letter-spacing:0.01em;
 }
-.clear-btn{
-  position:absolute; top:10px; right:10px; padding:5px 13px; border-radius:999px;
-  border:none; background:rgba(36,27,46,0.08); color:var(--ink); font-size:11.5px; font-weight:700;
-  cursor:pointer;
-}
-.clear-btn:hover{ background:rgba(36,27,46,0.16); }
 
 .reveal-btn{
   margin:12px 0 0 66px;
@@ -576,10 +572,7 @@ function renderProblemDetail(id){
           ${hintHtml}
         </div>
       </div>
-      <div class="scratch-wrap">
-        <canvas class="scratch-canvas" id="canvas${i}"></canvas>
-        <button class="clear-btn" onclick="clearCanvas(${i})">지우기</button>
-      </div>
+      <div class="think-nudge">잠깐 생각해봐.</div>
       <button class="reveal-btn" onclick="revealStep(${i})">확인해보자 →</button>
       <div class="reveal-panel" id="reveal${i}">
         <div class="reveal-label">CHECK</div>
@@ -591,7 +584,6 @@ function renderProblemDetail(id){
 
   document.getElementById('flowCard').classList.remove('show');
   document.getElementById('step0').classList.add('visible');
-  setupCanvas(document.getElementById('canvas0'));
   renderProgress(0);
 }
 
@@ -618,20 +610,22 @@ function setupCanvas(canvas){
   }
 
   canvas.addEventListener('pointerdown', (e)=>{
+    e.preventDefault();
     drawing = true;
     const p = getPos(e);
     lastX = p.x; lastY = p.y;
     canvas.setPointerCapture(e.pointerId);
-  });
+  }, { passive: false });
   canvas.addEventListener('pointermove', (e)=>{
     if(!drawing) return;
+    e.preventDefault();
     const p = getPos(e);
     ctx.beginPath();
     ctx.moveTo(lastX, lastY);
     ctx.lineTo(p.x, p.y);
     ctx.stroke();
     lastX = p.x; lastY = p.y;
-  });
+  }, { passive: false });
   const stopDraw = ()=>{ drawing = false; };
   canvas.addEventListener('pointerup', stopDraw);
   canvas.addEventListener('pointerleave', stopDraw);
@@ -651,7 +645,6 @@ function revealStep(i){
   document.querySelector('#step'+i+' .reveal-btn').style.display = 'none';
   if(i+1 < current.steps.length){
     document.getElementById('step'+(i+1)).classList.add('visible');
-    setupCanvas(document.getElementById('canvas'+(i+1)));
     renderProgress(i+1);
     setTimeout(()=>document.getElementById('step'+(i+1)).scrollIntoView({behavior:'smooth', block:'center'}), 100);
   } else {
@@ -668,11 +661,6 @@ function resetChain(){
   current.steps.forEach((s, i)=>{
     const stepEl = document.getElementById('step'+i);
     stepEl.classList.remove('visible');
-    const canvas = stepEl.querySelector('.scratch-canvas');
-    if(canvas && canvas.dataset.ready){
-      const ctx = canvas.getContext('2d');
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-    }
     stepEl.querySelector('.reveal-btn').style.display = '';
     document.getElementById('reveal'+i).classList.remove('show');
   });
